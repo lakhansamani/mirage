@@ -15,12 +15,23 @@ var storage_service_1 = require("./shared/storage.service");
 var docService_1 = require("./shared/docService");
 var editorHook_1 = require("./shared/editorHook");
 var urlShare_1 = require("./shared/urlShare");
+var trimUrl = function (url) {
+    if (url.lastIndexOf("/") === url.length - 1) {
+        return url.slice(0, -1);
+    }
+    return url;
+};
+var defaultQuery = {
+    query: {
+        match_all: {}
+    }
+};
 var AppComponent = (function () {
     function AppComponent(appbaseService, storageService, docService) {
         this.appbaseService = appbaseService;
         this.storageService = storageService;
         this.docService = docService;
-        this.BRANCH = 'dev';
+        this.BRANCH = "dev";
         this.connected = false;
         this.initial_connect = false;
         this.detectChange = null;
@@ -33,62 +44,74 @@ var AppComponent = (function () {
         };
         this.savedQueryList = [];
         this.query_info = {
-            name: '',
-            tag: ''
+            name: "",
+            tag: ""
         };
-        this.sort_by = 'createdAt';
+        this.sort_by = "createdAt";
         this.sort_direction = true;
-        this.searchTerm = '';
-        this.searchByMethod = 'tag';
+        this.searchTerm = "";
+        this.searchByMethod = "tag";
         this.sidebar = false;
         this.hide_url_flag = false;
         this.appsList = [];
         this.errorInfo = {};
-        this.editorHookHelp = new editorHook_1.EditorHook({ editorId: 'editor' });
-        this.responseHookHelp = new editorHook_1.EditorHook({ editorId: 'responseBlock' });
-        this.errorHookHelp = new editorHook_1.EditorHook({ editorId: 'errorEditor' });
+        this.editorHookHelp = new editorHook_1.EditorHook({ editorId: "editor" });
+        this.responseHookHelp = new editorHook_1.EditorHook({ editorId: "responseBlock" });
+        this.errorHookHelp = new editorHook_1.EditorHook({ editorId: "errorEditor" });
         this.urlShare = new urlShare_1.UrlShare();
         this.result_time_taken = null;
         this.result_random_token = null;
-        this.version = '2.0';
+        this.version = 2;
         this.active = true;
         this.submitted = false;
         this.setLayoutFlag = false;
-        this.responseMode = 'historic';
+        this.responseMode = "historic";
         this.isAppbaseApp = true;
         this.deleteItemInfo = {
-            title: 'Confirm Deletion',
-            message: 'Do you want to delete this query?',
-            yesText: 'Delete',
-            noText: 'Cancel'
+            title: "Confirm Deletion",
+            message: "Do you want to delete this query?",
+            yesText: "Delete",
+            noText: "Cancel"
         };
         this.defaultApp = {
-            appname: '2016primaries',
-            url: 'https://Uy82NeW8e:c7d02cce-94cc-4b60-9b17-7e7325195851@scalr.api.appbase.io'
+            appname: "2016primaries",
+            url: "https://Uy82NeW8e:c7d02cce-94cc-4b60-9b17-7e7325195851@scalr.api.appbase.io"
         };
         this.appSelected = false;
     }
-    AppComponent.prototype.onSubmit = function () { this.submitted = true; };
+    AppComponent.prototype.onSubmit = function () {
+        this.submitted = true;
+    };
     AppComponent.prototype.setDocSample = function (link) {
         this.docLink = link;
     };
     AppComponent.prototype.ngOnInit = function () {
-        $('body').removeClass('is-loadingApp');
+        $("body").removeClass("is-loadingApp");
         this.queryParams = this.urlShare.getQueryParameters();
-        this.allowHF = !(this.queryParams && this.queryParams.hasOwnProperty('hf')) ? true : false;
-        this.allowF = !this.allowHF ? false : (!(this.queryParams && this.queryParams.hasOwnProperty('f')) ? true : false);
-        this.allowH = !this.allowHF ? false : (!(this.queryParams && this.queryParams.hasOwnProperty('h')) ? true : false);
+        this.allowHF = !(this.queryParams && this.queryParams.hasOwnProperty("hf"))
+            ? true
+            : false;
+        this.allowF = !this.allowHF
+            ? false
+            : !(this.queryParams && this.queryParams.hasOwnProperty("f"))
+                ? true
+                : false;
+        this.allowH = !this.allowHF
+            ? false
+            : !(this.queryParams && this.queryParams.hasOwnProperty("h"))
+                ? true
+                : false;
         // get data from url
         this.detectConfig(configCb.bind(this));
         function configCb(config) {
             this.setInitialValue();
             this.getQueryList();
             this.getAppsList();
-            if (this.BRANCH === 'master') {
+            if (this.BRANCH === "master") {
                 this.EsSpecific();
             }
-            if (config && config === 'learn') {
-                $('#learnModal').modal('show');
+            if (config && config === "learn") {
+                $("#learnModal").modal("show");
                 this.initial_connect = true;
             }
             else {
@@ -100,21 +123,21 @@ var AppComponent = (function () {
         }
     };
     AppComponent.prototype.ngOnChanges = function (changes) {
-        var prev = changes['selectedQuery'].previousValue;
-        var current = changes['selectedQuery'].currentValue;
+        var prev = changes["selectedQuery"].previousValue;
+        var current = changes["selectedQuery"].currentValue;
     };
     // detect app config, either get it from url or apply default config
     AppComponent.prototype.detectConfig = function (cb) {
         var config = null;
-        var isDefault = window.location.href.indexOf('#?default=true') > -1 ? true : false;
-        var isInputState = window.location.href.indexOf('input_state=') > -1 ? true : false;
-        var isApp = window.location.href.indexOf('app=') > -1 ? true : false;
+        var isDefault = window.location.href.indexOf("#?default=true") > -1 ? true : false;
+        var isInputState = window.location.href.indexOf("input_state=") > -1 ? true : false;
+        var isApp = window.location.href.indexOf("app=") > -1 ? true : false;
         if (isDefault) {
             config = this.defaultApp;
             return cb(config);
         }
         else if (!isInputState && !isApp) {
-            return cb('learn');
+            return cb("learn");
         }
         else {
             this.urlShare.decryptUrl().then(function (data) {
@@ -134,9 +157,10 @@ var AppComponent = (function () {
     };
     // get indices
     AppComponent.prototype.getIndices = function () {
-        var es_host = document.URL.split('/_plugin/')[0];
+        var es_host = document.URL.split("/_plugin/")[0];
         var getIndices = this.appbaseService.getIndices(es_host);
-        getIndices.then(function (res) {
+        getIndices
+            .then(function (res) {
             try {
                 var data = res.json();
                 var historicApps_1 = this.getAppsList();
@@ -163,7 +187,7 @@ var AppComponent = (function () {
                 // default app is no app found
                 if (!historicApps_1.length) {
                     var obj = {
-                        appname: 'sampleapp',
+                        appname: "sampleapp",
                         url: es_host
                     };
                     historicApps_1.push(obj);
@@ -171,20 +195,21 @@ var AppComponent = (function () {
                 if (!this.config.url) {
                     this.config.url = historicApps_1[0].url;
                 }
-                this.storageService.set('mirage-appsList', JSON.stringify(historicApps_1));
+                this.storageService.set("mirage-appsList", JSON.stringify(historicApps_1));
                 this.getAppsList();
             }
             catch (e) {
                 console.log(e);
             }
-        }.bind(this)).catch(function (e) {
-            console.log('Not able to get the version.');
+        }.bind(this))
+            .catch(function (e) {
+            console.log("Not able to get the version.");
         });
     };
-    //Get config from localstorage 
+    //Get config from localstorage
     AppComponent.prototype.getLocalConfig = function () {
-        var url = this.storageService.get('mirage-url');
-        var appname = this.storageService.get('mirage-appname');
+        var url = this.storageService.get("mirage-url");
+        var appname = this.storageService.get("mirage-appname");
         this.getAppsList();
         if (url != null) {
             this.config.url = url;
@@ -197,7 +222,7 @@ var AppComponent = (function () {
     };
     // get appsList from storage
     AppComponent.prototype.getAppsList = function () {
-        var appsList = this.storageService.get('mirage-appsList');
+        var appsList = this.storageService.get("mirage-appsList");
         if (appsList) {
             try {
                 this.appsList = JSON.parse(appsList);
@@ -211,7 +236,7 @@ var AppComponent = (function () {
     // get query list from local storage
     AppComponent.prototype.getQueryList = function () {
         try {
-            var list = this.storageService.get('queryList');
+            var list = this.storageService.get("queryList");
             if (list) {
                 this.savedQueryList = JSON.parse(list);
                 this.sort(this.savedQueryList);
@@ -221,13 +246,13 @@ var AppComponent = (function () {
     };
     //Set config from localstorage
     AppComponent.prototype.setLocalConfig = function (url, appname) {
-        this.storageService.set('mirage-url', url);
-        this.storageService.set('mirage-appname', appname);
+        this.storageService.set("mirage-url", url);
+        this.storageService.set("mirage-appname", appname);
         var obj = {
             appname: appname,
-            url: url
+            url: trimUrl(url)
         };
-        var appsList = this.storageService.get('mirage-appsList');
+        var appsList = this.storageService.get("mirage-appsList");
         if (appsList) {
             try {
                 this.appsList = JSON.parse(appsList);
@@ -242,7 +267,7 @@ var AppComponent = (function () {
             });
         }
         this.appsList.push(obj);
-        this.storageService.set('mirage-appsList', JSON.stringify(this.appsList));
+        this.storageService.set("mirage-appsList", JSON.stringify(this.appsList));
     };
     AppComponent.prototype.setInitialValue = function () {
         this.mapping = null;
@@ -250,9 +275,9 @@ var AppComponent = (function () {
         this.selectedTypes = [];
         this.result = {
             resultQuery: {
-                'type': '',
-                'result': [],
-                'final': "{}"
+                type: "",
+                result: [],
+                final: "{}"
             },
             output: {},
             queryId: 1,
@@ -274,18 +299,19 @@ var AppComponent = (function () {
         this.hide_url_flag = this.hide_url_flag ? false : true;
     };
     // Connect with config url and appname
-    // do mapping request  
-    // and set response in mapping property 
+    // do mapping request
+    // and set response in mapping property
     AppComponent.prototype.connect = function (clearFlag) {
         this.connected = false;
         this.initial_connect = false;
         var self = this;
         var APPNAME = this.config.appname;
-        var URL = this.config.url;
+        var URL = trimUrl(this.config.url);
+        this.config.url = trimUrl(this.config.url);
         var filteredConfig = this.appbaseService.filterurl(URL);
         console.log(this.config, filteredConfig);
         if (!filteredConfig) {
-            console.log('Not able to filter url', URL);
+            console.log("Not able to filter url", URL);
         }
         else {
             this.config.username = filteredConfig.username;
@@ -299,18 +325,24 @@ var AppComponent = (function () {
     // get version of elasticsearch
     AppComponent.prototype.getVersion = function () {
         var self = this;
-        this.appbaseService.getVersion().then(function (res) {
+        this.appbaseService
+            .getVersion()
+            .then(function (res) {
             try {
                 var data = res.json();
                 var source = data && data[self.config.appname];
-                if (source && source.settings && source.settings.index && source.settings.index.version) {
-                    var version = source.settings.index.version.created_string;
-                    self.version = version;
-                    if (!(self.version.split('.')[0] === '2' || self.version.split('.')[0] === '5'
-                        || self.version.split('.')[0] === '6')) {
+                if (source &&
+                    source.settings &&
+                    source.settings.index &&
+                    source.settings.index.version) {
+                    var version = source.settings.index.version.upgraded ||
+                        source.settings.index.version.created;
+                    self.version = parseInt(version.charAt(0), 10);
+                    self.appbaseService.setVersion(self.version);
+                    if (self.version > 7) {
                         self.errorShow({
-                            title: 'Elasticsearch Version Not Supported',
-                            message: 'Mirage only supports v2.x, v5.x and v6.x* of Elasticsearch Query DSL'
+                            title: "Elasticsearch Version Not Supported",
+                            message: "Mirage only supports v2.x, v5.x, v6.x and v7.x* of Elasticsearch Query DSL"
                         });
                     }
                 }
@@ -318,18 +350,22 @@ var AppComponent = (function () {
             catch (e) {
                 console.log(e);
             }
-        }).catch(function (e) {
-            console.log('Not able to get the version.');
+        })
+            .catch(function (e) {
+            console.log("Not able to get the version.");
         });
     };
     // get mappings
     AppComponent.prototype.getMappings = function (clearFlag) {
         var self = this;
-        this.appbaseService.getMappings().then(function (data) {
-            self.isAppbaseApp = self.config.host === 'https://scalr.api.appbase.io' ? true : false;
+        this.appbaseService
+            .getMappings()
+            .then(function (data) {
+            self.isAppbaseApp =
+                self.config.host === "https://scalr.api.appbase.io" ? true : false;
             self.connected = true;
             self.setInitialValue();
-            self.finalUrl = self.config.host + '/' + self.config.appname;
+            self.finalUrl = self.config.host + "/" + self.config.appname;
             self.mapping = data;
             self.types = self.seprateType(data);
             self.setLocalConfig(self.config.url, self.config.appname);
@@ -345,7 +381,11 @@ var AppComponent = (function () {
                 if (decryptedData.selectedTypes) {
                     self.selectedTypes = decryptedData.selectedTypes;
                     self.detectChange = "check";
-                    setTimeout(function () { $('#setType').val(self.selectedTypes).trigger("change"); }, 300);
+                    setTimeout(function () {
+                        $("#setType")
+                            .val(self.selectedTypes)
+                            .trigger("change");
+                    }, 300);
                 }
                 if (decryptedData.result) {
                     self.result = decryptedData.result;
@@ -355,30 +395,34 @@ var AppComponent = (function () {
                 }
             }
             //set input state
-            self.urlShare.inputs['config'] = self.config;
-            self.urlShare.inputs['selectedTypes'] = self.selectedTypes;
-            self.urlShare.inputs['result'] = self.result;
-            self.urlShare.inputs['finalUrl'] = self.finalUrl;
+            self.urlShare.inputs["config"] = self.config;
+            self.urlShare.inputs["selectedTypes"] = self.selectedTypes;
+            self.urlShare.inputs["result"] = self.result;
+            self.urlShare.inputs["finalUrl"] = self.finalUrl;
             self.urlShare.createUrl();
             setTimeout(function () {
-                if ($('body').width() > 768) {
+                if ($("body").width() > 768) {
                     self.setLayoutResizer();
                 }
                 else {
                     self.setMobileLayout();
                 }
-                // self.editorHookHelp.setValue('');
+                var currentValue = self.editorHookHelp.getValue();
+                if (!currentValue && currentValue !== "{}") {
+                    self.editorHookHelp.setValue(JSON.stringify(defaultQuery, null, 2));
+                }
             }, 300);
-        }).catch(function (e) {
+        })
+            .catch(function (e) {
             console.log(e);
             self.initial_connect = true;
             self.errorShow({
-                title: 'Authentication Error',
+                title: "Authentication Error",
                 message: "It looks like your app name, username, password combination doesn't match. Check your url and appname and then connect it again."
             });
         });
     };
-    // Seprate the types from mapping	
+    // Seprate the types from mapping
     AppComponent.prototype.seprateType = function (mappingObj) {
         var mapObj = mappingObj[this.config.appname].mappings;
         var types = [];
@@ -387,18 +431,19 @@ var AppComponent = (function () {
         }
         if (!types.length) {
             this.errorShow({
-                title: 'Type does not exist.',
-                message: this.config.appname + ' does not contain any type mapping. You should *first* create a type mapping to perform query operations.'
+                title: "Type does not exist.",
+                message: this.config.appname +
+                    " does not contain any type mapping. You should *first* create a type mapping to perform query operations."
             });
         }
         return types;
     };
     AppComponent.prototype.newQuery = function (currentQuery) {
-        var queryList = this.storageService.get('queryList');
+        var queryList = this.storageService.get("queryList");
         if (queryList) {
             var list = JSON.parse(queryList);
             var queryData = list.filter(function (query) {
-                return query.name === currentQuery.name && query.tag === currentQuery.tag;
+                return (query.name === currentQuery.name && query.tag === currentQuery.tag);
             });
             var query_1;
             if (queryData.length) {
@@ -407,10 +452,10 @@ var AppComponent = (function () {
                 this.initial_connect = false;
                 this.config = query_1.config;
                 this.appbaseService.setAppbase(this.config);
-                this.appbaseService.get('/_mapping').then(function (res) {
+                this.appbaseService.get("/_mapping").then(function (res) {
                     var _this = this;
                     var data = res.json();
-                    this.finalUrl = this.config.host + '/' + this.config.appname;
+                    this.finalUrl = this.config.host + "/" + this.config.appname;
                     this.setInitialValue();
                     this.connected = true;
                     this.result = query_1.result;
@@ -418,14 +463,16 @@ var AppComponent = (function () {
                     this.types = this.seprateType(data);
                     this.selectedTypes = query_1.selectedTypes;
                     //set input state
-                    this.urlShare.inputs['config'] = this.config;
-                    this.urlShare.inputs['selectedTypes'] = this.selectedTypes;
-                    this.urlShare.inputs['result'] = this.result;
-                    this.urlShare.inputs['finalUrl'] = this.finalUrl;
+                    this.urlShare.inputs["config"] = this.config;
+                    this.urlShare.inputs["selectedTypes"] = this.selectedTypes;
+                    this.urlShare.inputs["result"] = this.result;
+                    this.urlShare.inputs["finalUrl"] = this.finalUrl;
                     this.urlShare.createUrl();
                     setTimeout(function () {
-                        $('#setType').val(_this.selectedTypes).trigger("change");
-                        if ($('body').width() > 768) {
+                        $("#setType")
+                            .val(_this.selectedTypes)
+                            .trigger("change");
+                        if ($("body").width() > 768) {
                             _this.setLayoutResizer();
                         }
                         else {
@@ -441,24 +488,26 @@ var AppComponent = (function () {
     };
     AppComponent.prototype.deleteQuery = function (currentQuery) {
         this.currentDeleteQuery = currentQuery;
-        $('#confirmModal').modal('show');
+        $("#confirmModal").modal("show");
     };
     AppComponent.prototype.confirmDeleteQuery = function (confirmFlag) {
         if (confirmFlag && this.currentDeleteQuery) {
             var currentQuery = this.currentDeleteQuery;
             this.getQueryList();
             this.savedQueryList.forEach(function (query, index) {
-                if (query.name === currentQuery.name && query.tag === currentQuery.tag) {
+                if (query.name === currentQuery.name &&
+                    query.tag === currentQuery.tag) {
                     this.savedQueryList.splice(index, 1);
                 }
             }.bind(this));
             this.filteredQuery.forEach(function (query, index) {
-                if (query.name === currentQuery.name && query.tag === currentQuery.tag) {
+                if (query.name === currentQuery.name &&
+                    query.tag === currentQuery.tag) {
                     this.filteredQuery.splice(index, 1);
                 }
             }.bind(this));
             try {
-                this.storageService.set('queryList', JSON.stringify(this.savedQueryList));
+                this.storageService.set("queryList", JSON.stringify(this.savedQueryList));
             }
             catch (e) { }
         }
@@ -467,11 +516,11 @@ var AppComponent = (function () {
     AppComponent.prototype.clearAll = function () {
         this.setInitialValue();
         this.query_info = {
-            name: '',
-            tag: ''
+            name: "",
+            tag: ""
         };
         this.detectChange += "check";
-        this.editorHookHelp.setValue('');
+        this.editorHookHelp.setValue(JSON.stringify(defaultQuery, null, 2));
     };
     AppComponent.prototype.sidebarToggle = function () {
         this.sidebar = this.sidebar ? false : true;
@@ -499,14 +548,14 @@ var AppComponent = (function () {
         this.sort(this.savedQueryList);
         var queryString = JSON.stringify(this.savedQueryList);
         try {
-            this.storageService.set('queryList', JSON.stringify(this.savedQueryList));
+            this.storageService.set("queryList", JSON.stringify(this.savedQueryList));
         }
         catch (e) { }
-        $('#saveQueryModal').modal('hide');
+        $("#saveQueryModal").modal("hide");
     };
     // Sorting by created At
     AppComponent.prototype.sort = function (list) {
-        this.sort_by = 'createdAt';
+        this.sort_by = "createdAt";
         this.filteredQuery = list.sortBy(function (item) {
             return -item[this.sort_by];
         }.bind(this));
@@ -514,12 +563,15 @@ var AppComponent = (function () {
     // Searching
     AppComponent.prototype.searchList = function (obj) {
         var searchTerm = obj.searchTerm;
-        var searchByMethod = obj.searchByMethod ? obj.searchByMethod : 'tag';
+        var searchByMethod = obj.searchByMethod ? obj.searchByMethod : "tag";
         this.searchTerm = searchTerm;
         this.searchByMethod = searchByMethod;
         if (this.searchTerm.trim().length > 1) {
             this.filteredQuery = this.savedQueryList.filter(function (item) {
-                return (item[this.searchByMethod] && item[this.searchByMethod].indexOf(this.searchTerm) !== -1) ? true : false;
+                return item[this.searchByMethod] &&
+                    item[this.searchByMethod].indexOf(this.searchTerm) !== -1
+                    ? true
+                    : false;
             }.bind(this));
             if (!this.filteredQuery.length) {
                 this.filteredQuery = this.savedQueryList.filter(function (item) {
@@ -535,29 +587,29 @@ var AppComponent = (function () {
     AppComponent.prototype.setFinalUrl = function (url) {
         this.finalUrl = url;
         //set input state
-        this.urlShare.inputs['finalUrl'] = this.finalUrl;
+        this.urlShare.inputs["finalUrl"] = this.finalUrl;
         this.urlShare.createUrl();
     };
     AppComponent.prototype.setProp = function (propInfo) {
-        if (propInfo.name === 'finalUrl') {
+        if (propInfo.name === "finalUrl") {
             this.finalUrl = propInfo.value;
-            this.urlShare.inputs['finalUrl'] = this.finalUrl;
+            this.urlShare.inputs["finalUrl"] = this.finalUrl;
         }
-        if (propInfo.name === 'availableFields') {
+        if (propInfo.name === "availableFields") {
             this.result.resultQuery.availableFields = propInfo.value;
-            this.urlShare.inputs['result'] = this.result;
+            this.urlShare.inputs["result"] = this.result;
         }
-        if (propInfo.name === 'selectedTypes') {
+        if (propInfo.name === "selectedTypes") {
             this.selectedTypes = propInfo.value;
-            this.urlShare.inputs['selectedTypes'] = this.selectedTypes;
+            this.urlShare.inputs["selectedTypes"] = this.selectedTypes;
         }
-        if (propInfo.name === 'result_time_taken') {
+        if (propInfo.name === "result_time_taken") {
             this.result_time_taken = propInfo.value;
         }
-        if (propInfo.name === 'random_token') {
+        if (propInfo.name === "random_token") {
             this.result_random_token = propInfo.value;
         }
-        if (propInfo.name === 'responseMode') {
+        if (propInfo.name === "responseMode") {
             this.responseMode = propInfo.value;
         }
         //set input state
@@ -566,15 +618,15 @@ var AppComponent = (function () {
     AppComponent.prototype.setLayoutResizer = function () {
         this.setLayoutFlag = true;
         var self = this;
-        $('body').layout({
+        $("body").layout({
             east__size: "50%",
             center__paneSelector: "#paneCenter",
             east__paneSelector: "#paneEast"
         });
         function setSidebar() {
             var windowHeight = $(window).height();
-            $('.features-section').css('height', windowHeight);
-            var bodyHeight = $('body').height();
+            $(".features-section").css("height", windowHeight);
+            var bodyHeight = $("body").height();
             var mirageHeight = bodyHeight;
             if (self.allowHF && self.allowF && !self.allowH) {
                 mirageHeight -= 15;
@@ -586,17 +638,17 @@ var AppComponent = (function () {
                 mirageHeight -= 166;
             }
             setTimeout(function () {
-                $('#mirage-container').css('height', mirageHeight);
-                $('#paneCenter, #paneEast').css('height', mirageHeight);
+                $("#mirage-container").css("height", mirageHeight);
+                $("#paneCenter, #paneEast").css("height", mirageHeight);
             }, 300);
         }
         setSidebar();
-        $(window).on('resize', setSidebar);
+        $(window).on("resize", setSidebar);
     };
     AppComponent.prototype.setMobileLayout = function () {
-        var bodyHeight = $('body').height();
-        $('#mirage-container').css('height', bodyHeight - 116);
-        $('#paneCenter, #paneEast').css('height', bodyHeight);
+        var bodyHeight = $("body").height();
+        $("#mirage-container").css("height", bodyHeight - 116);
+        $("#paneCenter, #paneEast").css("height", bodyHeight);
     };
     AppComponent.prototype.setConfig = function (selectedConfig) {
         this.config.appname = selectedConfig.appname;
@@ -605,12 +657,12 @@ var AppComponent = (function () {
     AppComponent.prototype.errorShow = function (info) {
         var self = this;
         this.errorInfo = info;
-        $('#errorModal').modal('show');
+        $("#errorModal").modal("show");
         var message = info.message;
         self.errorHookHelp.focus(message);
         setTimeout(function () {
             self.errorHookHelp.focus(message);
-            if ($('#errorModal').hasClass('in')) {
+            if ($("#errorModal").hasClass("in")) {
                 self.errorHookHelp.setValue(message);
             }
             else {
@@ -622,18 +674,18 @@ var AppComponent = (function () {
     };
     AppComponent.prototype.viewData = function () {
         var dejavuLink = this.urlShare.dejavuLink();
-        window.open(dejavuLink, '_blank');
+        window.open(dejavuLink, "_blank");
     };
     AppComponent.prototype.openLearn = function () {
-        $('#learnModal').modal('show');
+        $("#learnModal").modal("show");
     };
     AppComponent.prototype.onAppSelectChange = function (appInput) {
         this.appSelected = appInput.trim() ? true : false;
     };
     AppComponent = __decorate([
         core_1.Component({
-            selector: 'my-app',
-            templateUrl: './app/app.component.html',
+            selector: "my-app",
+            templateUrl: "./app/app.component.html",
             providers: [appbase_service_1.AppbaseService, storage_service_1.StorageService, docService_1.DocService]
         }), 
         __metadata('design:paramtypes', [appbase_service_1.AppbaseService, storage_service_1.StorageService, docService_1.DocService])
@@ -1410,20 +1462,20 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var core_1 = require("@angular/core");
-var http_1 = require('@angular/http');
+var http_1 = require("@angular/http");
 var storage_service_1 = require("../../shared/storage.service");
 var AuthOperation = (function () {
     function AuthOperation(http, storageService) {
         this.http = http;
         this.storageService = storageService;
         this.updateStatus = new core_1.EventEmitter();
-        this.serverAddress = 'https://ossauth.appbase.io';
+        this.serverAddress = "https://ossauth.appbase.io";
         this.access_token_applied = false;
     }
     AuthOperation.prototype.ngOnInit = function () {
         var authConfig = {
-            domain: 'appbaseio.auth0.com',
-            clientID: 'tCy6GxnrsyKec3UxXCuYLhU6XWFCMgRD',
+            domain: "appbaseio.auth0.com",
+            clientID: "tCy6GxnrsyKec3UxXCuYLhU6XWFCMgRD",
             callbackURL: location.href,
             callbackOnLocationHash: true
         };
@@ -1436,10 +1488,10 @@ var AuthOperation = (function () {
         this.parseHash.call(this);
         var parseHash = this.parseHash.bind(this);
         setTimeout(function () {
-            console.log('hash watching Activated!');
             window.onhashchange = function () {
-                if (!self.access_token_applied && location.hash.indexOf('access_token') > -1) {
-                    console.log('access_token found!');
+                if (!self.access_token_applied &&
+                    location.hash.indexOf("access_token") > -1) {
+                    console.log("access_token found!");
                     parseHash();
                 }
             };
@@ -1447,17 +1499,17 @@ var AuthOperation = (function () {
     };
     AuthOperation.prototype.isTokenExpired = function (token) {
         var decoded = this.auth0.decodeJwt(token);
-        var now = (new Date()).getTime() / 1000;
+        var now = new Date().getTime() / 1000;
         return decoded.exp < now;
     };
     AuthOperation.prototype.login = function (subscribeOption) {
         var savedState = window.location.hash;
-        this.storageService.set('subscribeOption', subscribeOption);
-        if (savedState.indexOf('access_token') < 0) {
-            this.storageService.set('savedState', savedState);
+        this.storageService.set("subscribeOption", subscribeOption);
+        if (savedState.indexOf("access_token") < 0) {
+            this.storageService.set("savedState", savedState);
         }
         this.auth0.login({
-            connection: 'github'
+            connection: "github"
         }, function (err) {
             if (err)
                 console.log("something went wrong: " + err.message);
@@ -1465,7 +1517,7 @@ var AuthOperation = (function () {
     };
     AuthOperation.prototype.show_logged_in = function (token) {
         this.token = token;
-        if (window.location.hash.indexOf('access_token') > -1) {
+        if (window.location.hash.indexOf("access_token") > -1) {
             this.access_token_applied = true;
             this.restoreStates();
         }
@@ -1475,54 +1527,57 @@ var AuthOperation = (function () {
     };
     AuthOperation.prototype.show_sign_in = function () { };
     AuthOperation.prototype.restoreStates = function () {
-        var domain = location.href.split('#')[0];
-        var savedState = this.storageService.get('savedState');
+        var domain = location.href.split("#")[0];
+        var savedState = this.storageService.get("savedState");
         var finalPath = domain;
-        if (savedState && savedState.indexOf('access_token') < 0) {
+        if (savedState && savedState.indexOf("access_token") < 0) {
             finalPath += savedState;
         }
         else {
-            finalPath += '#';
+            finalPath += "#";
         }
         window.location.href = finalPath;
         location.reload();
     };
     AuthOperation.prototype.getUserProfile = function () {
-        var url = this.serverAddress + '/api/getUserProfile';
-        var subscribeOption = this.storageService.get('subscribeOption') && this.storageService.get('subscribeOption') !== 'null' ? this.storageService.get('subscribeOption') : null;
+        var url = this.serverAddress + "/api/getUserProfile";
+        var subscribeOption = this.storageService.get("subscribeOption") &&
+            this.storageService.get("subscribeOption") !== "null"
+            ? this.storageService.get("subscribeOption")
+            : null;
         var request = {
-            token: this.storageService.get('mirage_id_token'),
-            origin_app: 'MIRAGE',
+            token: this.storageService.get("mirage_id_token"),
+            origin_app: "MIRAGE",
             email_preference: subscribeOption
         };
         $.ajax({
-            type: 'POST',
+            type: "POST",
             url: url,
-            contentType: 'application/json; charset=utf-8',
-            dataType: 'json',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
             data: JSON.stringify(request)
         })
             .done(function (res) {
-            this.storageService.set('subscribeOption', null);
-            this.updateStatus.emit({ 'profile': res.message });
+            this.storageService.set("subscribeOption", null);
+            this.updateStatus.emit({ profile: res.message });
         }.bind(this))
             .fail(function (err) {
             console.error(err);
         });
     };
     AuthOperation.prototype.parseHash = function () {
-        var token = this.storageService.get('mirage_id_token');
+        var token = this.storageService.get("mirage_id_token");
         if (token !== null && !this.isTokenExpired(token)) {
             this.show_logged_in(token);
         }
         else {
             var result = this.auth0.parseHash(window.location.hash);
             if (result && result.idToken) {
-                this.storageService.set('mirage_id_token', result.idToken);
+                this.storageService.set("mirage_id_token", result.idToken);
                 this.show_logged_in(result.idToken);
             }
             else if (result && result.error) {
-                console.log('error: ' + result.error);
+                console.log("error: " + result.error);
                 this.show_sign_in();
             }
             else {
@@ -1536,8 +1591,8 @@ var AuthOperation = (function () {
     ], AuthOperation.prototype, "updateStatus", void 0);
     AuthOperation = __decorate([
         core_1.Component({
-            selector: 'auth-operation',
-            template: ''
+            selector: "auth-operation",
+            template: ""
         }), 
         __metadata('design:paramtypes', [http_1.Http, storage_service_1.StorageService])
     ], AuthOperation);
@@ -1617,9 +1672,9 @@ var JsonEditorComponent = (function () {
     function JsonEditorComponent(appbaseService) {
         this.appbaseService = appbaseService;
         this.streamPopoverInfo = {
-            trigger: 'hover',
-            placement: 'right',
-            content: 'Stream is avtive, waiting for data updates ..'
+            trigger: "hover",
+            placement: "right",
+            content: "Stream is avtive, waiting for data updates .."
         };
         this.setProp = new core_1.EventEmitter();
         this.errorShow = new core_1.EventEmitter();
@@ -1627,16 +1682,21 @@ var JsonEditorComponent = (function () {
     // Set codemirror instead of normal textarea
     JsonEditorComponent.prototype.ngOnInit = function () {
         var self = this;
+        console.log("allowed footer", self.allowF);
+        self.finalUrl =
+            self.finalUrl.indexOf("/_search") > -1
+                ? self.finalUrl
+                : self.finalUrl + "/_search";
         this.editorHookHelp.applyEditor();
-        $('#resultModal').modal({
+        $("#resultModal").modal({
             show: false,
-            backdrop: 'static'
+            backdrop: "static"
         });
-        $('#resultModal').on('hide.bs.modal', function () {
-            $('#resultTabs a[href="#resultJson"]').tab('show');
+        $("#resultModal").on("hide.bs.modal", function () {
+            $('#resultTabs a[href="#resultJson"]').tab("show");
             self.responseHookHelp.focus('{"Loading": "please wait......"}');
             var propInfo = {
-                name: 'result_time_taken',
+                name: "result_time_taken",
                 value: null
             };
             self.setProp.emit(propInfo);
@@ -1650,21 +1710,23 @@ var JsonEditorComponent = (function () {
         this.appbaseService.setAppbase(this.config);
         var validate = this.checkValidQuery();
         if (validate.flag) {
-            $('#resultModal').modal('show');
-            this.appbaseService.posturl(self.finalUrl, validate.payload).then(function (res) {
+            $("#resultModal").modal("show");
+            this.appbaseService
+                .posturl(self.finalUrl, validate.payload)
+                .then(function (res) {
                 self.result.isWatching = false;
                 var propInfo = {
-                    name: 'result_time_taken',
+                    name: "result_time_taken",
                     value: res.json().took
                 };
                 self.setProp.emit(propInfo);
                 var propInfo1 = {
-                    name: 'random_token',
+                    name: "random_token",
                     value: Math.random()
                 };
                 self.setProp.emit(propInfo1);
                 self.result.output = JSON.stringify(res.json(), null, 2);
-                if ($('#resultModal').hasClass('in')) {
+                if ($("#resultModal").hasClass("in")) {
                     self.responseHookHelp.setValue(self.result.output);
                 }
                 else {
@@ -1672,23 +1734,24 @@ var JsonEditorComponent = (function () {
                         self.responseHookHelp.setValue(self.result.output);
                     }, 300);
                 }
-            }).catch(function (data) {
-                $('#resultModal').modal('hide');
+            })
+                .catch(function (data) {
+                $("#resultModal").modal("hide");
                 self.result.isWatching = false;
                 self.result.output = JSON.stringify(data, null, 4);
                 var obj = {
-                    title: 'Response Error',
+                    title: "Response Error",
                     message: self.result.output
                 };
                 self.errorShow.emit(obj);
             });
-            if (this.responseMode === 'stream') {
+            if (this.responseMode === "stream") {
                 this.setStream(validate);
             }
         }
         else {
             var obj = {
-                title: 'Json validation',
+                title: "Json validation",
                 message: validate.message
             };
             this.errorShow.emit(obj);
@@ -1696,20 +1759,23 @@ var JsonEditorComponent = (function () {
     };
     JsonEditorComponent.prototype.setStream = function (validate) {
         var _this = this;
-        var selectedTypes = $('#setType').val();
+        var selectedTypes = $("#setType").val();
         var body = validate.payload;
         setTimeout(function () {
-            $('.stream-signal').show();
-            $('.stream-signal').popover(_this.streamPopoverInfo);
+            $(".stream-signal").show();
+            $(".stream-signal").popover(_this.streamPopoverInfo);
         }, 300);
-        this.appbaseService.searchStream(selectedTypes, body)
-            .on('data', this.onStreamData.bind(this))
-            .on('error', this.onStreamError.bind(this));
+        this.appbaseService
+            .searchStream(selectedTypes, body)
+            .on("data", this.onStreamData.bind(this))
+            .on("error", this.onStreamError.bind(this));
     };
     JsonEditorComponent.prototype.onStreamData = function (res) {
-        $('.stream-signal').addClass('warning').addClass('success');
+        $(".stream-signal")
+            .addClass("warning")
+            .addClass("success");
         var streamResponse = JSON.stringify(res, null, 2);
-        if ($('#resultModal').hasClass('in')) {
+        if ($("#resultModal").hasClass("in")) {
             this.responseHookHelp.prepend(streamResponse + "\n");
         }
         else {
@@ -1720,7 +1786,7 @@ var JsonEditorComponent = (function () {
     };
     JsonEditorComponent.prototype.onStreamError = function (res) {
         setTimeout(function () {
-            $('.stream-signal').hide();
+            $(".stream-signal").hide();
         }, 300);
     };
     // get the textarea value using editor hook
@@ -1737,7 +1803,7 @@ var JsonEditorComponent = (function () {
         };
         this.result.resultQuery.result.forEach(function (result) {
             result.internal.forEach(function (query) {
-                if (query.field === '' || query.query === '') {
+                if (query.field === "" || query.query === "") {
                     returnObj.flag = false;
                 }
             });
@@ -1758,10 +1824,16 @@ var JsonEditorComponent = (function () {
     };
     JsonEditorComponent.prototype.setPropIn = function () {
         var propInfo = {
-            name: 'finalUrl',
+            name: "finalUrl",
             value: this.finalUrl
         };
         this.setProp.emit(propInfo);
+    };
+    JsonEditorComponent.prototype.getBottom = function () {
+        if (this.allowF) {
+            return -23;
+        }
+        return 10;
     };
     __decorate([
         core_1.Input(), 
@@ -1795,11 +1867,21 @@ var JsonEditorComponent = (function () {
         core_1.Output(), 
         __metadata('design:type', Object)
     ], JsonEditorComponent.prototype, "errorShow", void 0);
+    __decorate([
+        core_1.Input(), 
+        __metadata('design:type', Object)
+    ], JsonEditorComponent.prototype, "allowF", void 0);
     JsonEditorComponent = __decorate([
         core_1.Component({
-            selector: 'query-jsoneditor',
-            templateUrl: './app/jsonEditor/jsonEditor.component.html',
-            inputs: ['config', 'editorHookHelp', 'responseHookHelp', 'setProp', 'errorShow'],
+            selector: "query-jsoneditor",
+            templateUrl: "./app/jsonEditor/jsonEditor.component.html",
+            inputs: [
+                "config",
+                "editorHookHelp",
+                "responseHookHelp",
+                "setProp",
+                "errorShow"
+            ],
             providers: [appbase_service_1.AppbaseService]
         }), 
         __metadata('design:paramtypes', [appbase_service_1.AppbaseService])
@@ -2072,41 +2154,41 @@ var QueryBlocksComponent = (function () {
         this.queryList = queryList_1.queryList;
         this.queryFormat = {
             internal: {
-                field: '',
-                query: '',
-                selectedField: '',
-                selectedQuery: '',
-                input: '',
-                analyzeTest: '',
-                type: ''
+                field: "",
+                query: "",
+                selectedField: "",
+                selectedQuery: "",
+                input: "",
+                analyzeTest: "",
+                type: ""
             },
             bool: {
                 boolparam: 0,
                 parent_id: 0,
                 id: 0,
                 internal: [],
-                minimum_should_match: '',
-                path: '',
-                type: '',
+                minimum_should_match: "",
+                path: "",
+                type: "",
                 xid: 0,
-                parent_type: '',
-                score_mode: ''
+                parent_type: "",
+                score_mode: ""
             }
         };
-        this.joiningQuery = [''];
+        this.joiningQuery = [""];
         this.joiningQueryParam = 0;
         this.popoverInfo = {
             stream: {
-                trigger: 'hover',
-                placement: 'top',
-                content: 'Shows an interactive stream of results, useful when your data is changing quickly.',
-                container: 'body'
+                trigger: "hover",
+                placement: "top",
+                content: "Shows an interactive stream of results, useful when your data is changing quickly.",
+                container: "body"
             },
             historic: {
-                trigger: 'hover',
-                placement: 'top',
-                content: 'Shows historical results, useful when your data is not changing quickly.',
-                container: 'body'
+                trigger: "hover",
+                placement: "top",
+                content: "Shows historical results, useful when your data is not changing quickly.",
+                container: "body"
             }
         };
         this.saveQuery = new core_1.EventEmitter();
@@ -2119,7 +2201,9 @@ var QueryBlocksComponent = (function () {
     };
     QueryBlocksComponent.prototype.ngOnChanges = function (nextProps) {
         this.joiningQuery = this.result.joiningQuery;
-        if (nextProps && (nextProps.isAppbaseApp && nextProps.isAppbaseApp.currentValue) || (nextProps.selectedTypes && nextProps.selectedTypes.currentValue.length)) {
+        if ((nextProps &&
+            (nextProps.isAppbaseApp && nextProps.isAppbaseApp.currentValue)) ||
+            (nextProps.selectedTypes && nextProps.selectedTypes.currentValue.length)) {
             this.setPopover();
         }
     };
@@ -2138,7 +2222,7 @@ var QueryBlocksComponent = (function () {
             this.buildQuery();
         }
         else {
-            alert('Select type first.');
+            alert("Select type first.");
         }
     };
     QueryBlocksComponent.prototype.removeQuery = function () {
@@ -2147,9 +2231,9 @@ var QueryBlocksComponent = (function () {
     };
     QueryBlocksComponent.prototype.addSortBlock = function () {
         var sortObj = {
-            'selectedField': '',
-            'order': 'asc',
-            'availableOptionalParams': []
+            selectedField: "",
+            order: "asc",
+            availableOptionalParams: []
         };
         this.result.sort.push(sortObj);
     };
@@ -2172,23 +2256,23 @@ var QueryBlocksComponent = (function () {
         if (results.length) {
             var finalresult = {};
             if (results.length > 1) {
-                es_final['query'] = {
-                    'bool': finalresult
+                es_final["query"] = {
+                    bool: finalresult
                 };
             }
             else {
                 if (results[0].availableQuery && results[0].internal.length > 1) {
-                    es_final['query'] = {
-                        'bool': finalresult
+                    es_final["query"] = {
+                        bool: finalresult
                     };
                 }
                 else {
-                    if (self.queryList['boolQuery'][results[0]['boolparam']] === 'must') {
-                        es_final['query'] = finalresult;
+                    if (self.queryList["boolQuery"][results[0]["boolparam"]] === "must") {
+                        es_final["query"] = finalresult;
                     }
                     else {
-                        es_final['query'] = {
-                            'bool': finalresult
+                        es_final["query"] = {
+                            bool: finalresult
                         };
                     }
                 }
@@ -2201,16 +2285,18 @@ var QueryBlocksComponent = (function () {
                 results.forEach(function (result1) {
                     if (result1.parent_id == result0.id) {
                         var current_query = {
-                            'bool': {}
+                            bool: {}
                         };
-                        var currentBool = self.queryList['boolQuery'][result1['boolparam']];
-                        current_query['bool'][currentBool] = result1.availableQuery;
-                        if (currentBool === 'should') {
-                            current_query['bool']['minimum_should_match'] = result1.minimum_should_match;
+                        var currentBool = self.queryList["boolQuery"][result1["boolparam"]];
+                        current_query["bool"][currentBool] = result1.availableQuery;
+                        if (currentBool === "should") {
+                            current_query["bool"]["minimum_should_match"] =
+                                result1.minimum_should_match;
                         }
-                        if (self.joiningQuery[self.joiningQueryParam] === 'nested') {
-                            current_query['bool']['nested']['path'] = result1.path;
-                            current_query['bool']['nested']['score_mode'] = result1.score_mode;
+                        if (self.joiningQuery[self.joiningQueryParam] === "nested") {
+                            current_query["bool"]["nested"]["path"] = result1.path;
+                            current_query["bool"]["nested"]["score_mode"] =
+                                result1.score_mode;
                             isBoolPresent = false;
                         }
                         result0.availableQuery.push(current_query);
@@ -2219,9 +2305,10 @@ var QueryBlocksComponent = (function () {
             });
             results.forEach(function (result) {
                 if (result.parent_id === 0) {
-                    var currentBool = self.queryList['boolQuery'][result['boolparam']];
-                    if (self.joiningQuery && self.joiningQuery[self.joiningQueryParam] === 'nested') {
-                        finalresult['nested'] = {
+                    var currentBool = self.queryList["boolQuery"][result["boolparam"]];
+                    if (self.joiningQuery &&
+                        self.joiningQuery[self.joiningQueryParam] === "nested") {
+                        finalresult["nested"] = {
                             path: result.path,
                             score_mode: result.score_mode,
                             query: {
@@ -2233,7 +2320,8 @@ var QueryBlocksComponent = (function () {
                         };
                         isBoolPresent = false;
                     }
-                    else if (self.joiningQuery && self.joiningQuery[self.joiningQueryParam] === 'has_child') {
+                    else if (self.joiningQuery &&
+                        self.joiningQuery[self.joiningQueryParam] === "has_child") {
                         finalresult[currentBool] = {
                             has_child: {
                                 type: result.type,
@@ -2242,7 +2330,8 @@ var QueryBlocksComponent = (function () {
                             }
                         };
                     }
-                    else if (self.joiningQuery && self.joiningQuery[self.joiningQueryParam] === 'has_parent') {
+                    else if (self.joiningQuery &&
+                        self.joiningQuery[self.joiningQueryParam] === "has_parent") {
                         finalresult[currentBool] = {
                             has_parent: {
                                 parent_type: result.parent_type,
@@ -2250,7 +2339,8 @@ var QueryBlocksComponent = (function () {
                             }
                         };
                     }
-                    else if (self.joiningQuery && self.joiningQuery[self.joiningQueryParam] === 'parent_id') {
+                    else if (self.joiningQuery &&
+                        self.joiningQuery[self.joiningQueryParam] === "parent_id") {
                         finalresult[currentBool] = {
                             parent_id: {
                                 type: result.type,
@@ -2259,7 +2349,7 @@ var QueryBlocksComponent = (function () {
                         };
                     }
                     else {
-                        if (result.internal.length > 1 || currentBool !== 'must') {
+                        if (result.internal.length > 1 || currentBool !== "must") {
                             finalresult[currentBool] = result.availableQuery;
                         }
                         else {
@@ -2268,74 +2358,72 @@ var QueryBlocksComponent = (function () {
                             }
                             else {
                                 finalresult = result.availableQuery[0];
-                                es_final['query'] = finalresult;
+                                es_final["query"] = finalresult;
                             }
                         }
                     }
-                    if (currentBool === 'should') {
-                        finalresult['minimum_should_match'] = result.minimum_should_match;
+                    if (currentBool === "should") {
+                        finalresult["minimum_should_match"] = result.minimum_should_match;
                     }
                     else {
                         // condition required to reset when someone changes back from should to another bool type
-                        if (finalresult.hasOwnProperty('minimum_should_match')) {
-                            delete finalresult['minimum_should_match'];
+                        if (finalresult.hasOwnProperty("minimum_should_match")) {
+                            delete finalresult["minimum_should_match"];
                         }
                     }
                 }
                 var _a;
             });
             if (!isBoolPresent) {
-                es_final['query'] = es_final['query']['bool'];
+                es_final["query"] = es_final["query"]["bool"];
             }
         }
         else {
-            if (this.selectedTypes.length) {
-                es_final['query'] = {
-                    'match_all': {}
-                };
-            }
+            es_final["query"] = {
+                match_all: {}
+            };
         }
         // apply sort
         if (self.result.sort) {
             self.result.sort.map(function (sortObj) {
                 if (sortObj.selectedField) {
-                    if (!es_final.hasOwnProperty('sort')) {
-                        es_final['sort'] = [];
+                    if (!es_final.hasOwnProperty("sort")) {
+                        es_final["sort"] = [];
                     }
                     var obj = {};
                     if (sortObj._geo_distance) {
                         obj = (_a = {},
-                            _a['_geo_distance'] = (_b = {},
+                            _a["_geo_distance"] = (_b = {},
                                 _b[sortObj.selectedField] = {
-                                    'lat': sortObj._geo_distance.lat,
-                                    'lon': sortObj._geo_distance.lon
+                                    lat: sortObj._geo_distance.lat,
+                                    lon: sortObj._geo_distance.lon
                                 },
-                                _b['order'] = sortObj.order,
-                                _b['distance_type'] = sortObj._geo_distance.distance_type,
-                                _b['unit'] = sortObj._geo_distance.unit || 'm',
+                                _b.order = sortObj.order,
+                                _b.distance_type = sortObj._geo_distance.distance_type,
+                                _b.unit = sortObj._geo_distance.unit || "m",
                                 _b
                             ),
                             _a
                         );
                         if (sortObj.mode) {
-                            obj['_geo_distance']['mode'] = sortObj.mode;
+                            obj["_geo_distance"]["mode"] = sortObj.mode;
                         }
                     }
                     else {
                         obj = (_c = {},
                             _c[sortObj.selectedField] = {
-                                'order': sortObj.order
+                                order: sortObj.order
                             },
                             _c
                         );
                         if (sortObj.mode) {
-                            obj[sortObj.selectedField]['mode'] = sortObj.mode;
+                            obj[sortObj.selectedField]["mode"] = sortObj.mode;
                         }
                         if (sortObj.missing) {
-                            obj[sortObj.selectedField]['missing'] = sortObj.missing;
+                            obj[sortObj.selectedField]["missing"] = sortObj.missing;
                         }
                     }
-                    es_final['sort'].push(obj);
+                    es_final["sort"].push(obj);
                 }
                 var _a, _b, _c;
             });
@@ -2349,7 +2437,7 @@ var QueryBlocksComponent = (function () {
         }
         //set input state
         try {
-            this.urlShare.inputs['result'] = this.result;
+            this.urlShare.inputs["result"] = this.result;
             this.urlShare.createUrl();
         }
         catch (e) {
@@ -2373,7 +2461,7 @@ var QueryBlocksComponent = (function () {
             if (val0.parent_id != 0) {
                 result.forEach(function (val1) {
                     if (val0.parent_id == val1.id) {
-                        val1.appliedQuery['bool']['must'].push(val0.appliedQuery);
+                        val1.appliedQuery["bool"]["must"].push(val0.appliedQuery);
                     }
                 }.bind(this));
             }
@@ -2382,15 +2470,15 @@ var QueryBlocksComponent = (function () {
     // Createquery until query is selected
     QueryBlocksComponent.prototype.createQuery = function (val, childExists) {
         var queryParam = {
-            query: '*',
-            field: '*',
+            query: "*",
+            field: "*",
             queryFlag: true,
             fieldFlag: true
         };
-        if (val.analyzeTest === '' || val.type === '' || val.query === '') {
+        if (val.analyzeTest === "" || val.type === "" || val.query === "") {
             queryParam.queryFlag = false;
         }
-        if (val.field === '') {
+        if (val.field === "") {
             queryParam.fieldFlag = false;
         }
         if (queryParam.queryFlag) {
@@ -2411,7 +2499,8 @@ var QueryBlocksComponent = (function () {
         return sampleobj;
     };
     QueryBlocksComponent.prototype.toggleBoolQuery = function () {
-        if (this.result.resultQuery.result.length < 1 && this.selectedTypes.length > 0) {
+        if (this.result.resultQuery.result.length < 1 &&
+            this.selectedTypes.length > 0) {
             this.addBoolQuery(0);
         }
         else {
@@ -2436,17 +2525,19 @@ var QueryBlocksComponent = (function () {
     // handle the body click event for editable
     // close all the select2 whene clicking outside of editable-element
     QueryBlocksComponent.prototype.handleEditable = function () {
-        $('body').on('click', function (e) {
+        $("body").on("click", function (e) {
             var target = $(e.target);
-            if (target.hasClass('.editable-pack') || target.parents('.editable-pack').length) { }
+            if (target.hasClass(".editable-pack") ||
+                target.parents(".editable-pack").length) {
+            }
             else {
-                $('.editable-pack').removeClass('on');
+                $(".editable-pack").removeClass("on");
             }
         });
     };
     // open save query modal
     QueryBlocksComponent.prototype.openModal = function () {
-        $('#saveQueryModal').modal('show');
+        $("#saveQueryModal").modal("show");
     };
     QueryBlocksComponent.prototype.setPropIn = function (propObj) {
         this.setProp.emit(propObj);
@@ -2462,14 +2553,14 @@ var QueryBlocksComponent = (function () {
     QueryBlocksComponent.prototype.setPopover = function () {
         var _this = this;
         setTimeout(function () {
-            $('.responseMode .stream').popover(_this.popoverInfo.stream);
-            $('.responseMode .historic').popover(_this.popoverInfo.historic);
+            $(".responseMode .stream").popover(_this.popoverInfo.stream);
+            $(".responseMode .historic").popover(_this.popoverInfo.historic);
         }, 1000);
     };
     QueryBlocksComponent.prototype.changeMode = function (mode) {
         this.responseMode = mode;
         var propInfo = {
-            name: 'responseMode',
+            name: "responseMode",
             value: mode
         };
         this.setProp.emit(propInfo);
@@ -2519,6 +2610,10 @@ var QueryBlocksComponent = (function () {
         __metadata('design:type', Object)
     ], QueryBlocksComponent.prototype, "config", void 0);
     __decorate([
+        core_1.Input(), 
+        __metadata('design:type', Number)
+    ], QueryBlocksComponent.prototype, "version", void 0);
+    __decorate([
         core_1.Output(), 
         __metadata('design:type', Object)
     ], QueryBlocksComponent.prototype, "saveQuery", void 0);
@@ -2532,9 +2627,15 @@ var QueryBlocksComponent = (function () {
     ], QueryBlocksComponent.prototype, "setDocSample", void 0);
     QueryBlocksComponent = __decorate([
         core_1.Component({
-            selector: 'query-blocks',
-            templateUrl: './app/queryBlocks/queryBlocks.component.html',
-            inputs: ['detectChange', 'editorHookHelp', 'saveQuery', 'setProp', 'setDocSample']
+            selector: "query-blocks",
+            templateUrl: "./app/queryBlocks/queryBlocks.component.html",
+            inputs: [
+                "detectChange",
+                "editorHookHelp",
+                "saveQuery",
+                "setProp",
+                "setDocSample"
+            ]
         }), 
         __metadata('design:paramtypes', [])
     ], QueryBlocksComponent);
@@ -8009,11 +8110,19 @@ var TypesComponent = (function () {
         this.setProp = new core_1.EventEmitter();
         this.buildQuery = new core_1.EventEmitter();
     }
+    TypesComponent.prototype.ngOnInit = function () {
+        var self = this;
+        if (this.version >= 6) {
+            setTimeout(function () {
+                self.changeType(["_doc"]);
+            });
+        }
+    };
     TypesComponent.prototype.ngOnChanges = function (changes) {
-        if (changes['detectChange'] && this.types.length) {
-            var setType = $('#setType');
-            if (setType.attr('class').indexOf('selec2') > -1) {
-                setType.select2('destroy').html('');
+        if (changes["detectChange"] && this.types.length) {
+            var setType = $("#setType");
+            if (setType.attr("class").indexOf("selec2") > -1) {
+                setType.select2("destroy").html("");
             }
             setType.select2({
                 placeholder: "Select types to apply query",
@@ -8041,7 +8150,7 @@ var TypesComponent = (function () {
         var availableFields = [];
         var propInfo;
         var allMappings = this.mapping[this.config.appname].mappings;
-        this.result.joiningQuery = [''];
+        this.result.joiningQuery = [""];
         function feedAvailableField(mapObj, parent) {
             if (parent === void 0) { parent = null; }
             var mapObjWithFields = {};
@@ -8049,45 +8158,47 @@ var TypesComponent = (function () {
                 mapObjWithFields[field_1] = mapObj[field_1];
                 if (mapObj[field_1].fields) {
                     for (var sub in mapObj[field_1].fields) {
-                        var subname = field_1 + '.' + sub;
-                        subname = parent ? (parent + '.' + subname) : subname;
+                        var subname = field_1 + "." + sub;
+                        subname = parent ? parent + "." + subname : subname;
                         mapObjWithFields[subname] = mapObj[field_1].fields[sub];
                     }
                 }
                 if (mapObj[field_1].properties) {
                     for (var sub in mapObj[field_1].properties) {
-                        var subname = field_1 + '.' + sub;
-                        subname = parent ? (parent + '.' + subname) : subname;
+                        var subname = field_1 + "." + sub;
+                        subname = parent ? parent + "." + subname : subname;
                         mapObjWithFields[subname] = mapObj[field_1].properties[sub];
                     }
                     feedAvailableField.call(this, mapObj[field_1].properties, field_1);
                 }
-                if (mapObj[field_1].type === 'nested') {
-                    if (this.result.joiningQuery.indexOf('nested') < 0) {
-                        this.result.joiningQuery.push('nested');
+                if (mapObj[field_1].type === "nested") {
+                    if (this.result.joiningQuery.indexOf("nested") < 0) {
+                        this.result.joiningQuery.push("nested");
                     }
                 }
             }
             for (var field in mapObjWithFields) {
-                var index = typeof mapObjWithFields[field]['index'] != 'undefined' ? mapObjWithFields[field]['index'] : null;
+                var index = typeof mapObjWithFields[field]["index"] != "undefined"
+                    ? mapObjWithFields[field]["index"]
+                    : null;
                 var obj = {
                     name: field,
-                    type: mapObjWithFields[field]['type'],
+                    type: mapObjWithFields[field]["type"],
                     index: index
                 };
                 switch (obj.type) {
-                    case 'long':
-                    case 'integer':
-                    case 'short':
-                    case 'byte':
-                    case 'double':
-                    case 'float':
-                    case 'date':
-                        obj.type = 'numeric';
+                    case "long":
+                    case "integer":
+                    case "short":
+                    case "byte":
+                    case "double":
+                    case "float":
+                    case "date":
+                        obj.type = "numeric";
                         break;
-                    case 'text':
-                    case 'keyword':
-                        obj.type = 'string';
+                    case "text":
+                    case "keyword":
+                        obj.type = "string";
                         break;
                 }
                 availableFields.push(obj);
@@ -8100,31 +8211,31 @@ var TypesComponent = (function () {
             }.bind(this));
             this.setUrl(val);
             propInfo = {
-                name: 'selectedTypes',
+                name: "selectedTypes",
                 value: val
             };
             this.setProp.emit(propInfo);
         }
         else {
             propInfo = {
-                name: 'selectedTypes',
+                name: "selectedTypes",
                 value: []
             };
             this.setProp.emit(propInfo);
             this.setUrl([]);
         }
         propInfo = {
-            name: 'availableFields',
+            name: "availableFields",
             value: availableFields
         };
         this.setProp.emit(propInfo);
         for (var type in allMappings) {
-            if (allMappings[type].hasOwnProperty('_parent')) {
-                if (val && val.indexOf(allMappings[type]['_parent'].type) > -1) {
-                    if (this.result.joiningQuery.indexOf('has_child') < 0) {
-                        this.result.joiningQuery.push('has_child');
-                        this.result.joiningQuery.push('has_parent');
-                        this.result.joiningQuery.push('parent_id');
+            if (allMappings[type].hasOwnProperty("_parent")) {
+                if (val && val.indexOf(allMappings[type]["_parent"].type) > -1) {
+                    if (this.result.joiningQuery.indexOf("has_child") < 0) {
+                        this.result.joiningQuery.push("has_child");
+                        this.result.joiningQuery.push("has_parent");
+                        this.result.joiningQuery.push("parent_id");
                     }
                 }
             }
@@ -8133,26 +8244,26 @@ var TypesComponent = (function () {
     TypesComponent.prototype.setUrl = function (val) {
         var selectedTypes = val;
         if (!this.finalUrl) {
-            console.log('Finalurl is not present');
+            console.log("Finalurl is not present");
         }
         else {
-            var finalUrl = this.finalUrl.split('/');
-            var lastUrl = '';
+            var finalUrl = this.finalUrl.split("/");
+            var lastUrl = "";
             finalUrl[3] = this.config.appname;
             if (finalUrl.length > 4) {
-                finalUrl[4] = selectedTypes.join(',');
-                finalUrl[5] = '_search';
-                lastUrl = finalUrl.join('/');
+                finalUrl[4] = selectedTypes.join(",");
+                finalUrl[5] = "_search";
+                lastUrl = finalUrl.join("/");
             }
             else {
-                var typeJoin = '/' + selectedTypes.join(',');
-                if (!selectedTypes.length) {
-                    typeJoin = '';
+                var typeJoin = "" + selectedTypes.join(",");
+                if (selectedTypes.length) {
+                    typeJoin = "/" + selectedTypes.join(",");
                 }
-                lastUrl = this.finalUrl + typeJoin + '/_search';
+                lastUrl = this.finalUrl + typeJoin + "/_search";
             }
             var propInfo = {
-                name: 'finalUrl',
+                name: "finalUrl",
                 value: lastUrl
             };
             this.setProp.emit(propInfo);
@@ -8190,6 +8301,10 @@ var TypesComponent = (function () {
         __metadata('design:type', Object)
     ], TypesComponent.prototype, "urlShare", void 0);
     __decorate([
+        core_1.Input(), 
+        __metadata('design:type', Number)
+    ], TypesComponent.prototype, "version", void 0);
+    __decorate([
         core_1.Output(), 
         __metadata('design:type', Object)
     ], TypesComponent.prototype, "setProp", void 0);
@@ -8199,9 +8314,9 @@ var TypesComponent = (function () {
     ], TypesComponent.prototype, "buildQuery", void 0);
     TypesComponent = __decorate([
         core_1.Component({
-            selector: 'types',
-            templateUrl: './app/queryBlocks/types/types.component.html',
-            inputs: ['detectChange', 'setProp', 'buildQuery']
+            selector: "types",
+            templateUrl: "./app/queryBlocks/types/types.component.html",
+            inputs: ["detectChange", "setProp", "buildQuery"]
         }), 
         __metadata('design:paramtypes', [])
     ], TypesComponent);
@@ -8221,21 +8336,21 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var core_1 = require("@angular/core");
-var platform_browser_1 = require('@angular/platform-browser');
+var platform_browser_1 = require("@angular/platform-browser");
 var ResultComponent = (function () {
     function ResultComponent(sanitizer) {
         this.sanitizer = sanitizer;
         this.urlAvailable = false;
         // public dejavuDomain: string = 'http://localhost:1358/';
-        this.dejavuDomain = 'https://opensource.appbase.io/dejavu/live/';
+        this.dejavuDomain = "https://dejavu.appbase.io/";
     }
     ResultComponent.prototype.ngOnInit = function () {
         this.responseHookHelp.applyEditor({ readOnly: true });
     };
     ResultComponent.prototype.ngOnChanges = function (changes) {
-        if (changes && changes['result_random_token']) {
-            var prev = changes['result_random_token'].previousValue;
-            var current = changes['result_random_token'].currentValue;
+        if (changes && changes["result_random_token"]) {
+            var prev = changes["result_random_token"].previousValue;
+            var current = changes["result_random_token"].currentValue;
             if (current && prev !== current && this.editorHookHelp) {
                 var getQuery = this.editorHookHelp.getValue();
                 if (getQuery) {
@@ -8248,8 +8363,15 @@ var ResultComponent = (function () {
                     };
                     this.url = this.sanitizeUrl(this.dejavuDomain);
                     setTimeout(function () {
-                        var url = this.dejavuDomain + '#?input_state=' + this.urlShare.url;
-                        url = url + '&hf=false&sidebar=false&subscribe=false&query=' + JSON.stringify(queryObj);
+                        var url = this.dejavuDomain +
+                            "?mode=edit&appswitcher=false&sidebar=false&oldBanner=false&appname=" +
+                            this.urlShare.inputs.appname +
+                            "&url=" +
+                            this.urlShare.inputs.url;
+                        url =
+                            url +
+                                "&hf=false&sidebar=false&subscribe=false&query=" +
+                                JSON.stringify(queryObj);
                         this.url = this.sanitizeUrl(url);
                         console.log(this.url);
                     }.bind(this), 300);
@@ -8271,9 +8393,22 @@ var ResultComponent = (function () {
     ], ResultComponent.prototype, "responseMode", void 0);
     ResultComponent = __decorate([
         core_1.Component({
-            selector: 'query-result',
-            templateUrl: './app/result/result.component.html',
-            inputs: ['mapping', 'config', 'editorHookHelp', 'urlShare', 'responseHookHelp', 'result_time_taken', 'result_random_token', 'types', 'result', 'config', 'responseHookHelp', 'result_time_taken']
+            selector: "query-result",
+            templateUrl: "./app/result/result.component.html",
+            inputs: [
+                "mapping",
+                "config",
+                "editorHookHelp",
+                "urlShare",
+                "responseHookHelp",
+                "result_time_taken",
+                "result_random_token",
+                "types",
+                "result",
+                "config",
+                "responseHookHelp",
+                "result_time_taken"
+            ]
         }), 
         __metadata('design:paramtypes', [platform_browser_1.DomSanitizer])
     ], ResultComponent);
@@ -8292,9 +8427,39 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var core_1 = require('@angular/core');
-var http_1 = require('@angular/http');
-require('rxjs/add/operator/toPromise');
+var core_1 = require("@angular/core");
+var http_1 = require("@angular/http");
+require("rxjs/add/operator/toPromise");
+function parse_url(url) {
+    var pattern = RegExp("^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?");
+    var matches = url.match(pattern);
+    var hasAuth = matches[4].indexOf("@") > -1;
+    var href = "";
+    var auth = "";
+    var username = "";
+    var password = "";
+    if (hasAuth) {
+        var urlSplit = matches[4].split("@");
+        auth = urlSplit[0];
+        href = matches[2] + "://" + urlSplit[1];
+        var authSplit = auth.split(":");
+        username = authSplit[0];
+        password = authSplit[1];
+    }
+    else {
+        href = matches[2] + "://" + matches[4];
+    }
+    return {
+        scheme: matches[2],
+        href: href,
+        auth: auth,
+        path: matches[5],
+        query: matches[7],
+        fragment: matches[9],
+        username: username,
+        password: password
+    };
+}
 var AppbaseService = (function () {
     function AppbaseService(http) {
         this.http = http;
@@ -8307,46 +8472,57 @@ var AppbaseService = (function () {
             password: null
         };
         this.resultStream = null;
+        this.version = 5;
     }
+    AppbaseService.prototype.setVersion = function (version) {
+        this.version = version;
+    };
     AppbaseService.prototype.setAppbase = function (config) {
-        this.config.username = config.username;
-        this.config.password = config.password;
-        this.requestParam.pureurl = config.url;
+        var parsedUrl = parse_url(config.url);
+        this.config.username = parsedUrl.username;
+        this.config.password = parsedUrl.password;
+        this.requestParam.pureurl = parsedUrl.href;
         if (config.appname) {
-            this.requestParam.url = config.url + '/' + config.appname;
+            this.requestParam.url = config.url + "/" + config.appname;
         }
         else {
             this.requestParam.url = config.url;
         }
         var appbaseRef = {
-            url: "https://scalr.api.appbase.io",
+            url: parsedUrl.href,
             app: config.appname
         };
-        if (config.username) {
-            appbaseRef.credentials = config.username + ":" + config.password;
-            this.requestParam.auth = "Basic " + btoa(config.username + ':' + config.password);
+        console.log("setting up appbase");
+        if (parsedUrl.username) {
+            appbaseRef.credentials = parsedUrl.username + ":" + parsedUrl.password;
+            this.requestParam.auth =
+                "Basic " + btoa(parsedUrl.username + ":" + parsedUrl.password);
         }
-        ;
+        else {
+            this.requestParam.auth = "";
+        }
         this.appbaseRef = new Appbase(appbaseRef);
     };
     AppbaseService.prototype.get = function (path) {
         var headersObj = {
-            'Content-Type': 'application/json;charset=UTF-8'
+            "Content-Type": "application/json;charset=UTF-8"
         };
         if (this.requestParam.auth) {
             headersObj.Authorization = this.requestParam.auth;
         }
         var headers = new http_1.Headers(headersObj);
-        var request_url = this.requestParam.url.replace(this.config.username + ':' + this.config.password + '@', '');
-        var request_path = request_url + path + '/';
+        var request_url = this.requestParam.url.replace(this.config.username + ":" + this.config.password + "@", "");
+        var request_path = request_url + path + "/";
         return this.http.get(request_path, { headers: headers }).toPromise();
     };
     AppbaseService.prototype.getMappings = function () {
         var self = this;
         return new Promise(function (resolve, reject) {
-            getRequest('/_mapping').then(function (res) {
+            getRequest("/_mapping")
+                .then(function (res) {
                 var mappingData = res.json();
-                getRequest('/_alias').then(function (res) {
+                getRequest("/_alias")
+                    .then(function (res) {
                     var aliasData = res.json();
                     for (var index in aliasData) {
                         for (var alias in aliasData[index].aliases) {
@@ -8354,55 +8530,74 @@ var AppbaseService = (function () {
                         }
                     }
                     resolve(mappingData);
-                }).catch(function (e) {
+                })
+                    .catch(function (e) {
+                    // this fix needs to be there for v7
+                    if (self.version > 6) {
+                        mappingData = (_a = {},
+                            _a[self.appbaseRef.appname] = {
+                                mappings: {
+                                    _doc: mappingData[self.appbaseRef.appname].mappings
+                                }
+                            },
+                            _a
+                        );
+                    }
+                    console.log("mappingData1", mappingData, self);
                     resolve(mappingData);
+                    var _a;
                 });
-            }).catch(function (e) {
+            })
+                .catch(function (e) {
                 reject(e);
             });
         });
         function getRequest(path) {
             var headersObj = {
-                'Content-Type': 'application/json;charset=UTF-8'
+                "Content-Type": "application/json;charset=UTF-8"
             };
             if (self.requestParam.auth) {
                 headersObj.Authorization = self.requestParam.auth;
             }
             var headers = new http_1.Headers(headersObj);
-            var request_url = self.requestParam.url.replace(self.config.username + ':' + self.config.password + '@', '');
-            var request_path = request_url + path + '/';
+            var request_url = self.requestParam.url.replace(self.config.username + ":" + self.config.password + "@", "");
+            var request_path = request_url + path + "/";
             console.log(request_path);
             return self.http.get(request_path, { headers: headers }).toPromise();
         }
     };
     AppbaseService.prototype.getVersion = function () {
         var headersObj = {
-            'Content-Type': 'application/json;charset=UTF-8'
+            "Content-Type": "application/json;charset=UTF-8"
         };
         if (this.requestParam.auth) {
             headersObj.Authorization = this.requestParam.auth;
         }
         var headers = new http_1.Headers(headersObj);
-        var request_url = this.requestParam.url.replace(this.config.username + ':' + this.config.password + '@', '');
-        var request_path = request_url + '/_settings?human';
+        var request_url = this.requestParam.url.replace(this.config.username + ":" + this.config.password + "@", "");
+        var request_path = request_url + "/_settings";
         console.log(request_path);
         return this.http.get(request_path, { headers: headers }).toPromise();
     };
     AppbaseService.prototype.post = function (path, data) {
         var requestData = JSON.stringify(data);
         var headersObj = {
-            'Content-Type': 'application/json;charset=UTF-8'
+            "Content-Type": "application/json;charset=UTF-8"
         };
         if (this.requestParam.auth) {
             headersObj.Authorization = this.requestParam.auth;
         }
         var headers = new http_1.Headers(headersObj);
-        return this.http.post(this.requestParam.url + path, requestData, { headers: headers }).toPromise();
+        return this.http
+            .post(this.requestParam.url + path, requestData, {
+            headers: headers
+        })
+            .toPromise();
     };
     AppbaseService.prototype.posturl = function (url, data) {
         var requestData = JSON.stringify(data);
         var headersObj = {
-            'Content-Type': 'application/json;charset=UTF-8'
+            "Content-Type": "application/json;charset=UTF-8"
         };
         if (this.requestParam.auth) {
             headersObj.Authorization = this.requestParam.auth;
@@ -8412,57 +8607,44 @@ var AppbaseService = (function () {
     };
     AppbaseService.prototype.put = function (path, data) {
         var headersObj = {
-            'Content-Type': 'application/json;charset=UTF-8'
+            "Content-Type": "application/json;charset=UTF-8"
         };
         if (this.requestParam.auth) {
             headersObj.Authorization = this.requestParam.auth;
         }
         var headers = new http_1.Headers(headersObj);
-        return this.http.put(this.requestParam.url + path, data, { headers: headers }).toPromise();
+        return this.http
+            .put(this.requestParam.url + path, data, { headers: headers })
+            .toPromise();
     };
     AppbaseService.prototype.delete = function (path) {
         var headersObj = {
-            'Content-Type': 'application/json;charset=UTF-8'
+            "Content-Type": "application/json;charset=UTF-8"
         };
         if (this.requestParam.auth) {
             headersObj.Authorization = this.requestParam.auth;
         }
         var headers = new http_1.Headers(headersObj);
-        return this.http.delete(this.requestParam.url + path, { headers: headers }).toPromise();
+        return this.http
+            .delete(this.requestParam.url + path, { headers: headers })
+            .toPromise();
     };
     AppbaseService.prototype.handleError = function (error) {
-        console.error('An error occurred', error);
+        console.error("An error occurred", error);
     };
     AppbaseService.prototype.getIndices = function (url) {
         var temp_config = this.filterurl(url);
         this.setAppbase(temp_config);
-        return this.get('/_stats/indices');
+        return this.get("/_stats/indices");
     };
     AppbaseService.prototype.filterurl = function (url) {
         if (url) {
+            var parsedUrl = parse_url(url);
             var obj = {
-                username: null,
-                password: null,
-                url: url
+                username: parsedUrl.username,
+                password: parsedUrl.password,
+                url: parsedUrl.href
             };
-            var urlsplit = url.split(':');
-            try {
-                obj.username = urlsplit[1].replace('//', '');
-                var httpPrefix = url.split('://');
-                if (urlsplit[2]) {
-                    var pwsplit = urlsplit[2].split('@');
-                    obj.password = pwsplit[0];
-                    if (url.indexOf('@') !== -1) {
-                        obj.url = httpPrefix[0] + '://' + pwsplit[1];
-                        if (urlsplit[3]) {
-                            obj.url += ':' + urlsplit[3];
-                        }
-                    }
-                }
-            }
-            catch (e) {
-                console.log(e);
-            }
             return obj;
         }
         else {
@@ -8523,23 +8705,33 @@ exports.DocService = DocService;
 "use strict";
 exports.EditorHook = function (config) {
     this.editorId = config.editorId;
-    this.$editor = '#' + config.editorId;
+    this.$editor = "#" + config.editorId;
 };
 exports.EditorHook.prototype.applyEditor = function (settings) {
     var self = this;
     this.settings = settings;
     var defaultOptions = {
         lineNumbers: true,
-        mode: "javascript",
+        mode: {
+            name: "javascript",
+            json: true
+        },
         autoCloseBrackets: true,
         matchBrackets: true,
         showCursorWhenSelecting: true,
+        indentWithTabs: true,
         tabSize: 2,
-        extraKeys: { "Ctrl-Q": function (cm) { cm.foldCode(cm.getCursor()); } },
+        extraKeys: {
+            "Ctrl-Q": function (cm) {
+                cm.foldCode(cm.getCursor());
+            }
+        },
         foldGutter: true,
         gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
     };
-    var options = settings ? jQuery.extend(defaultOptions, settings) : defaultOptions;
+    var options = settings
+        ? jQuery.extend(defaultOptions, settings)
+        : defaultOptions;
     self.editor = CodeMirror.fromTextArea(document.getElementById(self.editorId), options);
 };
 exports.EditorHook.prototype.setValue = function (value) {
@@ -8766,10 +8958,10 @@ exports.StorageService = StorageService;
 },{"@angular/core":62}],59:[function(require,module,exports){
 "use strict";
 exports.UrlShare = function () {
-    this.secret = 'e';
+    this.secret = "e";
     this.decryptedData = {};
     this.inputs = {};
-    this.url = '';
+    this.url = "";
 };
 exports.UrlShare.prototype.getInputs = function () {
     return this.inputs;
@@ -8797,14 +8989,14 @@ exports.UrlShare.prototype.createUrl = function () {
     function compressCb(error, ciphertext) {
         if (!error) {
             this.url = ciphertext;
-            if (window.location.href.indexOf('#?default=true') > -1) {
-                window.location.href = window.location.href.split('?default=true')[0];
+            if (window.location.href.indexOf("#?default=true") > -1) {
+                window.location.href = window.location.href.split("?default=true")[0];
             }
-            var finalUrl = '#?input_state=' + ciphertext;
+            var finalUrl = "#?input_state=" + ciphertext;
             for (var params in this.queryParams) {
-                if (params !== 'input_state') {
+                if (params !== "input_state") {
                     console.log(params, this.queryParams[params]);
-                    finalUrl += '&' + params + '=' + this.queryParams[params];
+                    finalUrl += "&" + params + "=" + this.queryParams[params];
                 }
             }
             window.location.href = finalUrl;
@@ -8843,28 +9035,37 @@ exports.UrlShare.prototype.decryptUrl = function (cb) {
             }
         }
         else {
-            resolve({ error: 'Empty url' });
+            resolve({ error: "Empty url" });
         }
     });
 };
 exports.UrlShare.prototype.convertToUrl = function (type) {
     var ciphertext = this.url;
-    var final_url = '';
-    if (type == 'gh-pages') {
-        final_url = 'appbaseio.github.io/mirage/#?input_state=' + ciphertext;
+    var final_url = "";
+    if (type == "gh-pages") {
+        final_url = "appbaseio.github.io/mirage/#?input_state=" + ciphertext;
     }
     else {
-        final_url = window.location.protocol + '//' + window.location.host + '#?input_state=' + ciphertext;
+        final_url =
+            window.location.protocol +
+                "//" +
+                window.location.host +
+                "#?input_state=" +
+                ciphertext;
     }
     return final_url;
 };
 exports.UrlShare.prototype.dejavuLink = function () {
-    var final_url = 'http://appbaseio.github.io/dejavu/live/#?input_state=' + this.url;
+    console.log("final url", this.inputs);
+    var final_url = "https://dejavu.appbase.io?mode=edit&appname=" +
+        this.inputs.appname +
+        "&url=" +
+        this.inputs.url;
     return final_url;
 };
 exports.UrlShare.prototype.compress = function (jsonInput, cb) {
     if (!jsonInput) {
-        return cb('Input should not be empty');
+        return cb("Input should not be empty");
     }
     else {
         var packed = JSON.stringify(jsonInput);
@@ -8892,7 +9093,7 @@ exports.UrlShare.prototype.decompress = function (compressed, cb) {
                     cb(null, decryptedData);
                 }
                 else {
-                    cb('Not found');
+                    cb("Not found");
                 }
             }
             catch (e) {
@@ -8901,15 +9102,18 @@ exports.UrlShare.prototype.decompress = function (compressed, cb) {
         });
     }
     else {
-        return cb('Empty');
+        return cb("Empty");
     }
 };
 exports.UrlShare.prototype.getQueryParameters = function (str) {
     var tempurl = decodeURIComponent(window.location.href);
-    var hash = tempurl.split('#');
+    var hash = tempurl.split("#");
     if (hash.length > 1) {
-        return (str || hash[1]).replace(/(^\?)/, '').split("&").map(function (n) {
-            return n = n.split("="), this[n[0]] = n[1], this;
+        return (str || hash[1])
+            .replace(/(^\?)/, "")
+            .split("&")
+            .map(function (n) {
+            return (n = n.split("=")), (this[n[0]] = n[1]), this;
         }.bind({}))[0];
     }
     else {
